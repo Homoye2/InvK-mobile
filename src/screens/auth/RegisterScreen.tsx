@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Modal,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
@@ -15,7 +15,6 @@ export default function RegisterScreen({ navigation }: any) {
   const [form, setForm] = useState({ tenantName: '', name: '', phone: '', password: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [trialModal, setTrialModal] = useState<{ visible: boolean; endDate: string }>({ visible: false, endDate: '' });
 
   const handleRegister = async () => {
     if (!isConnected) { Alert.alert('Hors ligne', 'Vérifiez votre connexion internet.'); return; }
@@ -27,9 +26,9 @@ export default function RegisterScreen({ navigation }: any) {
     setLoading(true);
     try {
       const { data } = await authAPI.register(form);
-      const endDate = data.user?.trialEndsAt || '';
-      setTrialModal({ visible: true, endDate });
-      await setAuth(data.user, data.accessToken, data.refreshToken);
+      // Pass fromRegister=true so HomeScreen shows the welcome trial modal
+      await setAuth(data.user, data.accessToken, data.refreshToken, true);
+      // Navigation is handled automatically by RootNavigator reacting to isAuthenticated
     } catch (e: any) {
       const msg = e.response?.data?.message;
       Alert.alert('Erreur', Array.isArray(msg) ? msg[0] : msg || "Erreur lors de l'inscription");
@@ -96,29 +95,11 @@ export default function RegisterScreen({ navigation }: any) {
           <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleRegister} disabled={loading}>
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Créer mon compte</Text>}
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.linkRow}>
+                      <Text style={styles.linkText}>Déjà un compte ? <Text style={styles.link}>Se Connecter</Text></Text>
+                    </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <Modal visible={trialModal.visible} transparent animationType="fade">
-        <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalIconBox}>
-              <Ionicons name="checkmark-circle" size={56} color="#16a34a" />
-            </View>
-            <Text style={styles.modalTitle}>Bienvenue sur invK !</Text>
-            <Text style={styles.modalBody}>
-              Votre essai gratuit est actif jusqu'au{'\n'}
-              <Text style={styles.modalDate}>
-                {trialModal.endDate ? new Date(trialModal.endDate).toLocaleDateString('fr-FR') : '30 jours'}
-              </Text>
-              {'\n\n'}Profitez de toutes les fonctionnalités sans restriction.
-            </Text>
-            <TouchableOpacity style={styles.btn} onPress={() => setTrialModal({ ...trialModal, visible: false })}>
-              <Text style={styles.btnText}>Commencer</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -126,7 +107,7 @@ export default function RegisterScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#f0f4ff' },
   container: { flexGrow: 1, padding: 24 },
-  header: { marginBottom: 24, marginTop: 16 },
+  header: { marginBottom: 24, marginTop: 60 },
   back: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
   backText: { color: '#2563eb', fontSize: 15, fontWeight: '600' },
   title: { fontSize: 26, fontWeight: '800', color: '#111827' },
@@ -140,11 +121,8 @@ const styles = StyleSheet.create({
   eyeBtn: { padding: 4 },
   btn: { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
   btnDisabled: { opacity: 0.6 },
+  linkRow: { marginTop: 16, alignItems: 'center' },
+  linkText: { fontSize: 14, color: '#6b7280' },
+  link: { color: '#2563eb', fontWeight: '600' },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalCard: { backgroundColor: '#fff', borderRadius: 20, padding: 28, width: '100%', alignItems: 'center' },
-  modalIconBox: { marginBottom: 12 },
-  modalTitle: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 10 },
-  modalBody: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
-  modalDate: { fontWeight: '700', color: '#2563eb' },
 });

@@ -1,10 +1,10 @@
-import { ScrollView, View, Text, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, RefreshControl, TouchableOpacity, Modal } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { dashboardAPI, inventoryAPI, subscriptionsAPI } from '../../lib/api';
-import SubscriptionModal from '../../components/SubscriptionModal';
 import { useNavigation } from '@react-navigation/native';
+import { useAuthStore } from '../../store/authStore';
 
 const paymentLabels: Record<string, string> = {
   CASH: 'Espèces', WAVE: 'Wave', ORANGE_MONEY: 'Orange Money',
@@ -13,7 +13,23 @@ const paymentLabels: Record<string, string> = {
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
-  const [subModalDismissed, setSubModalDismissed] = useState(false);
+  const { justRegistered, clearJustRegistered, user } = useAuthStore();
+
+  // Welcome modal: shown once right after registration
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  // Trial banner: shown until user explicitly closes it (not on first visit — welcome modal handles that)
+  const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
+  // After trial banner is closed → show "subscribe now" push modal
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+
+  // Trigger welcome modal once when coming from registration
+  useEffect(() => {
+    if (justRegistered) {
+      setShowWelcomeModal(true);
+      setTrialBannerDismissed(true); // hide banner since welcome modal covers it
+      clearJustRegistered();
+    }
+  }, [justRegistered]);
 
   const { data: stats, refetch: refetchStats, isLoading } = useQuery({
     queryKey: ['stats'],
@@ -37,29 +53,109 @@ export default function HomeScreen() {
 
   const onRefresh = () => { refetchStats(); refetchActivity(); };
 
-  const showTrialModal = !subModalDismissed && usage?.status === 'TRIAL';
-  const showExpiredModal = usage?.status === 'EXPIRED';
+  const isTrial = usage?.status === 'TRIAL';
+  const isExpired = usage?.status === 'EXPIRED';
+
+  const handleDismissTrial = () => {
+    setTrialBannerDismissed(true);
+    setShowSubscribeModal(true);
+  };
+
+  const handleGoSubscribe = () => {
+    setShowSubscribeModal(false);
+    navigation.getParent()?.navigate('Settings');
+  };
 
   return (
     <>
-      <SubscriptionModal
-        visible={showTrialModal}
-        type="trial"
-        trialEndDate={usage?.endDate}
-        onClose={() => setSubModalDismissed(true)}
-        onSubscribe={() => { setSubModalDismissed(true); navigation.getParent()?.navigate('Settings'); }}
-      />
-      <SubscriptionModal
-        visible={!!showExpiredModal}
-        type="expired"
-        onSubscribe={() => navigation.getParent()?.navigate('Settings')}
-      />
+      {/* Expired blocking modal */}
+      <Modal visible={isExpired} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalIconBox}>
+              <Ionicons name="warning-outline" size={48} color="#dc2626" />
+            </View>
+            <Text style={styles.modalTitle}>Abonnement expiré</Text>
+            <Text style={styles.modalBody}>
+              Votre abonnement a expiré. Renouvelez-le pour continuer à utiliser l'application.
+            </Text>
+            <TouchableOpacity style={[styles.modalBtn, styles.modalBtnRed]} onPress={handleGoSubscribe}>
+              <Text style={styles.modalBtnText}>Renouveler mon abonnement</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Welcome modal: shown once right after registration */}
+      <Modal visible={showWelcomeModal} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.modalCard}>
+            <View style={[styles.modalIconBox, { backgroundColor: '#dcfce7' }]}>
+              <Ionicons name="checkmark-circle-outline" size={48} color="#16a34a" />
+            </View>
+            <Text style={styles.modalTitle}>Bienvenue sur invK !</Text>
+            <Text style={styles.modalBody}>
+              Votre essai gratuit de 30 jours est actif.{'\n'}
+              {user?.trialEndsAt
+                ? `Il expire le ${new Date(user.trialEndsAt).toLocaleDateString('fr-FR')}.`
+                : ''}
+              {'\n\n'}Profitez de toutes les fonctionnalités sans restriction.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalBtn}
+              onPress={() => setShowWelcomeModal(false)}
+            >
+              <Text style={styles.modalBtnText}>Commencer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Post-trial dismiss: push to subscribe */}
+      <Modal visible={showSubscribeModal && !isExpired} transparent animationType="fade">        <View style={styles.overlay}>
+          <View style={styles.modalCard}>
+            <View style={[styles.modalIconBox, { backgroundColor: '#eff6ff' }]}>
+              <Ionicons name="rocket-outline" size={48} color="#2563eb" />
+            </View>
+            <Text style={styles.modalTitle}>Passez à un abonnement</Text>
+            <Text style={styles.modalBody}>
+              Continuez à profiter de toutes les fonctionnalités invK sans interruption en choisissant un plan adapté à votre boutique.
+            </Text>
+            <TouchableOpacity style={styles.modalBtn} onPress={handleGoSubscribe}>
+              <Text style={styles.modalBtnText}>Voir les plans</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowSubscribeModal(false)} style={styles.modalSkip}>
+              <Text style={styles.modalSkipText}>Plus tard</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={onRefresh} />}
       >
+        {/* Trial banner — shown until user closes it */}
+        {isTrial && !trialBannerDismissed && (
+          <View style={styles.trialBanner}>
+            <View style={styles.trialLeft}>
+              <Ionicons name="time-outline" size={18} color="#92400e" style={{ marginRight: 8 }} />
+              <View>
+                <Text style={styles.trialTitle}>Essai gratuit en cours</Text>
+                {usage?.endDate && (
+                  <Text style={styles.trialSub}>
+                    Expire le {new Date(usage.endDate).toLocaleDateString('fr-FR')}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <TouchableOpacity onPress={handleDismissTrial} style={styles.trialClose}>
+              <Ionicons name="close" size={20} color="#92400e" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <Text style={styles.greeting}>Tableau de bord</Text>
 
         {/* KPI Grid */}
@@ -160,6 +256,24 @@ function KpiCard({ label, value, sub, color, textColor, icon, iconColor }: any) 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   content: { padding: 16, paddingBottom: 32 },
+  // Trial banner
+  trialBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fef3c7', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#fde68a' },
+  trialLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  trialTitle: { fontSize: 13, fontWeight: '700', color: '#92400e' },
+  trialSub: { fontSize: 12, color: '#b45309', marginTop: 2 },
+  trialClose: { padding: 4, marginLeft: 8 },
+  // Modals
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalCard: { backgroundColor: '#fff', borderRadius: 20, padding: 28, width: '100%', alignItems: 'center' },
+  modalIconBox: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#fee2e2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: 10 },
+  modalBody: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  modalBtn: { backgroundColor: '#2563eb', borderRadius: 12, paddingVertical: 14, width: '100%', alignItems: 'center' },
+  modalBtnRed: { backgroundColor: '#dc2626' },
+  modalBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  modalSkip: { marginTop: 14 },
+  modalSkipText: { color: '#9ca3af', fontSize: 13 },
+  // Dashboard
   greeting: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   kpi: { width: '47%', borderRadius: 14, padding: 14 },

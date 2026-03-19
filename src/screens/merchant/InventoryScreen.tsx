@@ -67,8 +67,14 @@ export default function InventoryScreen() {
       <View style={styles.tabs}>
         {(['stocks', 'movements'] as Tab[]).map((t) => (
           <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
+            <Ionicons
+              name={t === 'stocks' ? 'cube-outline' : 'list-outline'}
+              size={16}
+              color={tab === t ? '#2563eb' : '#9ca3af'}
+              style={{ marginRight: 6 }}
+            />
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'stocks' ? '📦 Stocks' : '📋 Mouvements'}
+              {t === 'stocks' ? 'Stocks' : 'Mouvements'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -76,7 +82,10 @@ export default function InventoryScreen() {
 
       {/* Search + Adjust */}
       <View style={styles.header}>
-        <TextInput style={styles.search} placeholder="🔍 Rechercher..." value={search} onChangeText={setSearch} placeholderTextColor="#9ca3af" />
+        <View style={styles.searchBox}>
+          <Ionicons name="search-outline" size={16} color="#9ca3af" style={{ marginRight: 8 }} />
+          <TextInput style={styles.searchInput} placeholder="Rechercher..." value={search} onChangeText={setSearch} placeholderTextColor="#9ca3af" />
+        </View>
         {tab === 'stocks' && (
           <TouchableOpacity style={styles.addBtn} onPress={() => { setError(''); setModal(true); }}>
             <Ionicons name="swap-vertical-outline" size={16} color="#fff" style={{ marginRight: 4 }} />
@@ -217,12 +226,13 @@ export default function InventoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8fafc' },
   tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
+  tab: { flex: 1, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#2563eb' },
   tabText: { fontSize: 14, color: '#6b7280', fontWeight: '600' },
   tabTextActive: { color: '#2563eb' },
-  header: { flexDirection: 'row', padding: 16, gap: 10, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  search: { flex: 1, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, backgroundColor: '#f9fafb' },
+  header: { flexDirection: 'row', padding: 12, gap: 10, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, paddingHorizontal: 12, backgroundColor: '#f9fafb' },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: '#111827' },
   addBtn: { backgroundColor: '#2563eb', borderRadius: 10, paddingHorizontal: 14, justifyContent: 'center', flexDirection: 'row', alignItems: 'center' },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   card: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },

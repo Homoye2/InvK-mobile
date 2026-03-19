@@ -11,6 +11,7 @@ export interface AuthUser {
   role: UserRole;
   tenantId: string;
   isActive: boolean;
+  trialEndsAt?: string | null;
 }
 
 interface AuthState {
@@ -18,8 +19,11 @@ interface AuthState {
   accessToken: string | null;
   isAuthenticated: boolean;
   hydrated: boolean;
-  setAuth: (user: AuthUser, accessToken: string, refreshToken: string) => Promise<void>;
+  // Set after registration so HomeScreen can show the welcome modal
+  justRegistered: boolean;
+  setAuth: (user: AuthUser, accessToken: string, refreshToken: string, fromRegister?: boolean) => Promise<void>;
   setUser: (user: AuthUser) => void;
+  clearJustRegistered: () => void;
   logout: () => Promise<void>;
   hydrate: () => Promise<void>;
 }
@@ -29,14 +33,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   isAuthenticated: false,
   hydrated: false,
+  justRegistered: false,
 
-  setAuth: async (user, accessToken, refreshToken) => {
+  setAuth: async (user, accessToken, refreshToken, fromRegister = false) => {
     await AsyncStorage.multiSet([
       ['accessToken', accessToken],
       ['refreshToken', refreshToken],
       ['user', JSON.stringify(user)],
     ]);
-    set({ user, accessToken, isAuthenticated: true });
+    set({ user, accessToken, isAuthenticated: true, justRegistered: fromRegister });
   },
 
   setUser: (user) => {
@@ -44,9 +49,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user });
   },
 
+  clearJustRegistered: () => set({ justRegistered: false }),
+
   logout: async () => {
     await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'user']);
-    set({ user: null, accessToken: null, isAuthenticated: false });
+    set({ user: null, accessToken: null, isAuthenticated: false, justRegistered: false });
   },
 
   hydrate: async () => {
