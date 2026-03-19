@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, A
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { usersAPI } from '../../lib/api';
+import PhoneInput from '../../components/PhoneInput';
 
 export default function TeamScreen() {
   const qc = useQueryClient();
@@ -110,10 +111,10 @@ export default function TeamScreen() {
 
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Téléphone * (identifiant)</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="call-outline" size={16} color="#9ca3af" style={{ marginRight: 8 }} />
-                <TextInput style={styles.inputWithIcon} value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} placeholder="+221771234567" placeholderTextColor="#9ca3af" keyboardType="phone-pad" />
-              </View>
+              <PhoneInput
+                value={form.phone}
+                onChange={(v) => setForm({ ...form, phone: v })}
+              />
             </View>
 
             <View style={styles.field}>

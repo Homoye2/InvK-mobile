@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { authAPI } from '../../lib/api';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import PhoneInput from '../../components/PhoneInput';
 
 export default function RegisterScreen({ navigation }: any) {
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -37,12 +38,6 @@ export default function RegisterScreen({ navigation }: any) {
     }
   };
 
-  const fields = [
-    { key: 'tenantName', label: 'Nom de la boutique', placeholder: 'Boutique Chez Ali', icon: 'storefront-outline' as const },
-    { key: 'name', label: 'Votre nom', placeholder: 'Ali Diallo', icon: 'person-outline' as const },
-    { key: 'phone', label: 'Téléphone', placeholder: '+221771234567', icon: 'call-outline' as const, keyboard: 'phone-pad' as const },
-  ];
-
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -56,23 +51,44 @@ export default function RegisterScreen({ navigation }: any) {
         </View>
 
         <View style={styles.card}>
-          {fields.map(({ key, label, placeholder, icon, keyboard }) => (
-            <View key={key} style={styles.field}>
-              <Text style={styles.label}>{label}</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name={icon} size={18} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.inputWithIcon}
-                  value={(form as any)[key]}
-                  onChangeText={(v) => setForm({ ...form, [key]: v })}
-                  placeholder={placeholder}
-                  placeholderTextColor="#9ca3af"
-                  keyboardType={keyboard || 'default'}
-                  autoCapitalize="none"
-                />
-              </View>
+          {/* Boutique */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Nom de la boutique</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="storefront-outline" size={18} color="#9ca3af" style={styles.inputIcon} />
+              <TextInput
+                style={styles.inputWithIcon}
+                value={form.tenantName}
+                onChangeText={(v) => setForm({ ...form, tenantName: v })}
+                placeholder="Boutique Chez Ali"
+                placeholderTextColor="#9ca3af"
+              />
             </View>
-          ))}
+          </View>
+
+          {/* Name */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Votre nom</Text>
+            <View style={styles.inputRow}>
+              <Ionicons name="person-outline" size={18} color="#9ca3af" style={styles.inputIcon} />
+              <TextInput
+                style={styles.inputWithIcon}
+                value={form.name}
+                onChangeText={(v) => setForm({ ...form, name: v })}
+                placeholder="Ali Diallo"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+          </View>
+
+          {/* Phone with country picker */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Téléphone</Text>
+            <PhoneInput
+              value={form.phone}
+              onChange={(v) => setForm({ ...form, phone: v })}
+            />
+          </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>Mot de passe</Text>

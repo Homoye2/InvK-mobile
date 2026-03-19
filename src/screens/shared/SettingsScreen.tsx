@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { usersAPI, subscriptionsAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
+import PhoneInput from '../../components/PhoneInput';
 
 const planLabels: Record<string, string> = { MENSUEL: 'Mensuel', TRIMESTRIEL: 'Trimestriel', SEMESTRIEL: 'Semestriel', ANNUEL: 'Annuel', ENTERPRISE: 'Enterprise' };
 
@@ -113,10 +114,10 @@ export default function SettingsScreen() {
         </View>
         <View style={styles.field}>
           <Text style={styles.label}>Téléphone</Text>
-          <View style={styles.inputRow}>
-            <Ionicons name="call-outline" size={16} color="#9ca3af" style={{ marginRight: 8 }} />
-            <TextInput style={styles.inputWithIcon} value={profileForm.phone} onChangeText={(v) => setProfileForm({ ...profileForm, phone: v })} keyboardType="phone-pad" />
-          </View>
+          <PhoneInput
+            value={profileForm.phone}
+            onChange={(v) => setProfileForm({ ...profileForm, phone: v })}
+          />
         </View>
         <TouchableOpacity style={[styles.btn, profileMutation.isPending && { opacity: 0.6 }]} onPress={() => profileMutation.mutate()} disabled={profileMutation.isPending}>
           {profileMutation.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Enregistrer</Text>}
